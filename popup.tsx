@@ -1,7 +1,9 @@
+import { AltTextGenerator } from "@/components/AltTextGenerator"
 import { ContrastAnalysisReport } from "@/components/ContrastAnalysisReport"
 import { ContrastChecker } from "@/components/ContrastChecker"
 import { ContrastOptimization } from "@/components/ContrastOptimization"
 import { Settings } from "@/components/Settings"
+import { TextToSpeech } from "@/components/TextToSpeech"
 import {
   Button,
   Card,
@@ -136,6 +138,8 @@ const PopupContent = () => {
               </CardContent>
             </Card>
           )}
+          <AltTextGenerator />
+          <TextToSpeech />
         </div>
       </div>
     </div>

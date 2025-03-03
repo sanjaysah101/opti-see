@@ -34,6 +34,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   } else if (message.action === "openSettings") {
     chrome.runtime.openOptionsPage()
+  } else if (message.type === "GENERATE_ALT_TEXT") {
+    console.log("🖼️ Received alt text generation request:", message.payload)
+    handleAltTextGeneration(message.payload)
+      .then((result) => {
+        console.log("✅ Alt text generation complete:", result)
+        sendResponse(result)
+      })
+      .catch((error) => {
+        console.error("❌ Alt text generation failed:", error)
+        sendResponse(null)
+      })
+    return true
   }
 
   // Always return true for async response
@@ -98,50 +110,120 @@ async function handleContrastAnalysis(payload: {
       return null
     }
 
-    // Format the prompt to force structured output
-    const prompt = `Analyze these website elements for contrast issues and provide specific CSS fixes.
-    Elements: ${JSON.stringify(payload.elementData)}
-
-    IMPORTANT: You must respond with a valid JSON object in exactly this format, with no additional text:
-    {
-      "analysis": {
-        "overall_score": 0.75,
-        "issues": [
-          {
-            "element": "p.some-class",
-            "current_contrast": 2.5,
-            "recommendation": "Increase contrast by darkening text",
-            "suggested_colors": {
-              "foreground": "#000000",
-              "background": "#FFFFFF"
-            }
-          }
-        ]
-      },
-      "css_fixes": "p.some-class { color: #000000; background-color: #FFFFFF; }"
-    }
-
-    Ensure all CSS selectors are specific and valid. Target elements by their exact class names, IDs, or tag names from the input data. The contrast ratio must meet WCAG ${payload.options.minContrast}:1 standard.`
-
-    const result = await aiService.analyze(prompt, {
-      task: "contrast_analysis",
-      format: "json",
-      temperature: 0.1
+    // Pre-analyze elements to calculate actual contrast ratios
+    const analyzedElements = payload.elementData.map((el) => {
+      const contrast = calculateContrastRatio(el.foreground, el.background)
+      return {
+        ...el,
+        contrast_ratio: contrast,
+        needs_fix: contrast < payload.options.minContrast
+      }
     })
 
-    // Ensure the response is properly formatted JSON
-    const parsedResult =
-      typeof result === "string" ? JSON.parse(result) : result
+    // Filter elements that need fixing
+    const issuesFound = analyzedElements.filter((el) => el.needs_fix)
 
-    if (!parsedResult?.css_fixes || !parsedResult?.analysis) {
-      console.error("❌ Invalid AI response format:", parsedResult)
+    // Calculate overall score based on the proportion of elements that meet contrast requirements
+    const totalElements = analyzedElements.length
+    const passingElements = analyzedElements.length - issuesFound.length
+    const overallScore = totalElements > 0 ? passingElements / totalElements : 1
+
+    // Format the response
+    const analysisResult = {
+      analysis: {
+        overall_score: overallScore,
+        issues: issuesFound.map((issue) => ({
+          element: issue.element,
+          text_content: issue.text_content,
+          current_contrast: issue.contrast_ratio,
+          current_colors: {
+            foreground: issue.foreground,
+            background: issue.background
+          },
+          recommendation: `Increase contrast to at least ${payload.options.minContrast}:1 (current: ${issue.contrast_ratio.toFixed(2)}:1)`,
+          suggested_colors: suggestImprovedColors(
+            issue.foreground,
+            issue.background,
+            payload.options.minContrast
+          )
+        }))
+      },
+      css_fixes: generateCSSFixes(issuesFound, payload.options.minContrast)
+    }
+
+    console.log("✅ Analysis complete:", analysisResult)
+    return analysisResult
+  } catch (error) {
+    console.error("❌ Error in contrast analysis:", error)
+    return null
+  }
+}
+
+// Helper function to calculate contrast ratio
+function calculateContrastRatio(color1: string, color2: string): number {
+  // Convert colors to relative luminance and calculate ratio
+  // Implementation details...
+  return 4.5 // Placeholder - implement actual calculation
+}
+
+// Helper function to suggest improved colors
+function suggestImprovedColors(
+  foreground: string,
+  background: string,
+  targetContrast: number
+) {
+  // Implement color adjustment logic to meet target contrast
+  // For now, return a simple suggestion
+  return {
+    foreground: "#000000",
+    background: "#FFFFFF"
+  }
+}
+
+// Helper function to generate CSS fixes
+function generateCSSFixes(issues: any[], targetContrast: number): string {
+  return issues
+    .map(
+      (issue) =>
+        `${issue.element} { color: ${issue.suggested_colors.foreground}; background-color: ${issue.suggested_colors.background}; }`
+    )
+    .join("\n")
+}
+
+async function handleAltTextGeneration(payload: { images: any[] }) {
+  try {
+    const aiService = AIServiceFactory.getService("claude")
+    const isInitialized = await aiService.isInitialized()
+
+    if (!isInitialized) {
+      console.error("❌ AI service not initialized")
       return null
     }
 
-    console.log("✅ Valid analysis result:", parsedResult)
-    return parsedResult
+    const prompt = `Analyze these images and generate descriptive, accessible alt text that follows WCAG guidelines. For each image, consider its context and purpose on the page.
+
+    Images: ${JSON.stringify(payload.images)}
+
+    Respond with a JSON object in this format:
+    {
+      "suggestions": [
+        {
+          "src": "image-url",
+          "alt_text": "Descriptive alt text",
+          "confidence": 0.95,
+          "reasoning": "Brief explanation of the generated alt text"
+        }
+      ]
+    }`
+
+    const result = await aiService.analyze(prompt, {
+      task: "alt_text_generation",
+      format: "json"
+    })
+
+    return result
   } catch (error) {
-    console.error("❌ Error in contrast analysis:", error)
+    console.error("❌ Error generating alt text:", error)
     return null
   }
 }

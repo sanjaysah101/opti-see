@@ -8,10 +8,11 @@ import {
 } from "@/components/ui/card"
 import { useContrastAnalyzer } from "@/features/contrast-analyzer"
 import { ClipboardList, Loader2 } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 type AnalysisIssue = {
   element: string
+  text: string
   foreground: string
   background: string
   ratio: number
@@ -19,18 +20,28 @@ type AnalysisIssue = {
 }
 
 export const ContrastAnalysisReport = () => {
-  const { analyzeContrast, isAnalyzing } = useContrastAnalyzer()
+  const { analyzeContrast, isAnalyzing, removeHighlights } =
+    useContrastAnalyzer()
   const [report, setReport] = useState<{
     score: number
     issues: AnalysisIssue[]
   } | null>(null)
 
   const handleAnalyze = async () => {
+    // Remove existing highlights when starting new analysis
+    removeHighlights()
     const result = await analyzeContrast()
     if (result) {
       setReport(result)
     }
   }
+
+  // Clean up highlights when component unmounts
+  useEffect(() => {
+    return () => {
+      removeHighlights()
+    }
+  }, [removeHighlights])
 
   return (
     <Card>
@@ -85,6 +96,9 @@ export const ContrastAnalysisReport = () => {
                           style={{ backgroundColor: issue.background }}
                         />
                         <span className="font-medium">{issue.element}</span>
+                      </div>
+                      <div className="mt-2 text-sm italic text-muted-foreground">
+                        "{issue.text}"
                       </div>
                       <div className="mt-1 text-muted-foreground">
                         Contrast Ratio: {issue.ratio.toFixed(2)}:1

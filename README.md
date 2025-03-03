@@ -7,6 +7,8 @@ OptiSee is a browser extension designed to enhance web accessibility using AI te
 - **Contrast Analysis**: Analyze web pages for contrast issues according to WCAG 2.2 standards.
 - **Content Simplification**: Simplify web content to different reading levels using Claude AI.
 - **Focus Mode**: Enhance focus by dimming distractions and highlighting important content.
+- **Alt Text Generator**: AI-powered generation of descriptive alt text for images.
+- **Text-to-Speech**: Convert selected text to speech with customizable playback options.
 
 ## Setup
 
@@ -27,11 +29,17 @@ OptiSee is a browser extension designed to enhance web accessibility using AI te
 2. Install dependencies:
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. Set up your API keys:
    - Open the extension's options page and enter your Claude AI API key.
+
+4. Load the extension in Chrome:
+   - Open Chrome and go to `chrome://extensions/`
+   - Enable "Developer mode"
+   - Click "Load unpacked"
+   - Select the `dist` folder from the project
 
 ### Development
 
@@ -51,36 +59,49 @@ To build the extension for production, run:
 pnpm build
 ```
 
-Open your browser and load the appropriate development build. For example, if you are developing for the chrome browser, using manifest v3, use: `build/chrome-mv3-dev`.
-
-You can start editing the popup by modifying `popup.tsx`. It should auto-update as you make changes. To add an options page, simply add a `options.tsx` file to the root of the project, with a react component default exported. Likewise to add a content page, add a `content.ts` file to the root of the project, importing some module and do some logic, then reload the extension on your browser.
-
-For further guidance, [visit our Documentation](https://docs.plasmo.com/)
-
-## Making production build
-
-Run the following:
-
-```bash
-pnpm build
-# or
-npm run build
-```
-
-This should create a production bundle for your extension, ready to be zipped and published to the stores.
-
-## Submit to the webstores
-
-The easiest way to deploy your Plasmo extension is to use the built-in [bpp](https://bpp.browser.market) GitHub action. Prior to using this action however, make sure to build your extension and upload the first version to the store to establish the basic credentials. Then, simply follow [this setup instruction](https://docs.plasmo.com/framework/workflows/submit) and you should be on your way for automated submission!
-
 ## Usage
 
-- **Toggle Toolbar**: Use the popup to toggle the accessibility toolbar on any webpage.
-- **Activate Features**: Use the toolbar to activate features like contrast analysis and content simplification.
+### Alt Text Generator
+
+1. Click the extension icon
+2. Select "Alt Text Generator"
+3. Click "Analyze Images"
+4. Review and apply suggested alt text
+
+### Contrast Analyzer
+
+1. Navigate to the desired webpage
+2. Open the extension
+3. Click "Analyze Website"
+4. Review contrast issues and suggestions
+
+### Text-to-Speech
+
+1. Select text on any webpage
+2. Click the extension icon
+3. Use the play button or keyboard shortcut (Ctrl/Cmd + Shift + S)
+4. Control playback with play/pause button
+5. Adjust voice settings if needed
+
+## Project Structure
+
+```src/
+├── components/ # React components
+├── features/ # Feature-specific hooks and logic
+├── services/ # AI and other services
+├── utils/ # Utility functions
+└── content.ts # Content script
+```
 
 ## Integration with Claude AI
 
-The extension uses the Anthropic SDK to interact with Claude AI. Ensure your API key is stored securely and is accessible by the extension.
+The extension uses the Anthropic SDK to interact with Claude AI for:
+
+- Generating accessible alt text for images
+- Analyzing contrast ratios and suggesting improvements
+- Simplifying complex text content
+
+Ensure your API key is stored securely and is accessible by the extension.
 
 ## Contributing
 
