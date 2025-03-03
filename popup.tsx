@@ -1,6 +1,14 @@
+import { ContrastAnalysisReport } from "@/components/ContrastAnalysisReport"
+import { ContrastChecker } from "@/components/ContrastChecker"
+import { ContrastOptimization } from "@/components/ContrastOptimization"
 import { Settings } from "@/components/Settings"
 import {
   Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -11,31 +19,21 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger
+  DropdownMenuTrigger
 } from "@/components/ui"
+import { WebsiteThemeToggle } from "@/components/WebsiteThemeToggle"
 import {
   DeveloperModeProvider,
   useDeveloperMode
 } from "@/contexts/DeveloperModeContext"
 import { SettingsProvider } from "@/contexts/SettingsContext"
-import { Github, Info, MoreVertical, Sparkles } from "lucide-react"
+import { Contrast, Github, Info, MoreVertical, Sparkles } from "lucide-react"
 
 import "globals.css"
-
-import { SelectDemo } from "./components/SelectDemo"
 
 // Separate component to use the context
 const PopupContent = () => {
   const { isDeveloperMode, toggleDeveloperMode } = useDeveloperMode()
-
-  const activateFeature = (feature: string) => {
-    chrome.runtime.sendMessage({ action: "toggleToolbar" })
-    chrome.runtime.sendMessage({ action: "activateFeature", feature })
-  }
 
   return (
     <div className="flex h-[30rem] w-[25rem] flex-col">
@@ -92,12 +90,6 @@ const PopupContent = () => {
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() =>
-                  chrome.runtime.sendMessage({ action: "toggleToolbar" })
-                }>
-                Toggle Toolbar
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() =>
                   window.open("https://docs.optisee.ai", "_blank")
                 }>
                 Documentation
@@ -114,69 +106,37 @@ const PopupContent = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto p-4">
-        <Tabs defaultValue="visual" className="h-full">
-          <TabsList className="mb-4 grid w-full grid-cols-3">
-            <TabsTrigger value="visual">Visual</TabsTrigger>
-            <TabsTrigger value="cognitive">Cognitive</TabsTrigger>
-            {isDeveloperMode && (
-              <TabsTrigger value="developer">Developer</TabsTrigger>
-            )}
-          </TabsList>
-
-          <TabsContent value="visual" className="h-full">
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => activateFeature("contrast")}>
-                Contrast Analysis
-              </Button>
-              <Button size="sm" onClick={() => activateFeature("color")}>
-                Color Adaptation
-              </Button>
-              <Button size="sm" onClick={() => activateFeature("font")}>
-                Font Optimization
-              </Button>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="cognitive" className="h-full">
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => activateFeature("simplify")}>
-                Simplify Content
-              </Button>
-              <Button size="sm" onClick={() => activateFeature("focus")}>
-                Focus Mode
-              </Button>
-              <Button size="sm" onClick={() => activateFeature("reading")}>
-                Reading Level
-              </Button>
-            </div>
-          </TabsContent>
-
-          {isDeveloperMode && (
-            <TabsContent value="developer" className="h-full">
-              <div className="flex flex-wrap gap-2">
+      <div className="flex-1 overflow-auto px-4 py-2">
+        <div className="space-y-4">
+          <WebsiteThemeToggle />
+          {isDeveloperMode ? (
+            <>
+              <ContrastOptimization />
+              <ContrastChecker />
+              <ContrastAnalysisReport />
+            </>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Contrast className="h-5 w-5" />
+                  Contrast Tools
+                </CardTitle>
+                <CardDescription>
+                  Advanced contrast tools are available in developer mode
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
                 <Button
-                  size="sm"
                   variant="outline"
-                  onClick={() => activateFeature("wcag")}>
-                  WCAG Checker
+                  onClick={toggleDeveloperMode}
+                  className="w-full">
+                  Enable Developer Mode
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => activateFeature("score")}>
-                  Accessibility Score
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => activateFeature("fixes")}>
-                  Fix Suggestions
-                </Button>
-              </div>
-            </TabsContent>
+              </CardContent>
+            </Card>
           )}
-        </Tabs>
+        </div>
       </div>
     </div>
   )

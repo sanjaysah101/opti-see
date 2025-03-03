@@ -13,9 +13,24 @@ type ContrastResult = {
   enhancedCSS?: string
 }
 
+type AnalysisResponse = {
+  analysis: {
+    overall_score: number
+    issues: Array<{
+      element: string
+      current_contrast: number
+      recommendation: string
+      suggested_colors: {
+        foreground: string
+        background: string
+      }
+    }>
+  }
+  css_fixes: string
+}
+
 export const useContrastAnalyzer = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [result, setResult] = useState<ContrastResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const analyzeContrast = async () => {
@@ -43,59 +58,51 @@ export const useContrastAnalyzer = () => {
         })
         .filter((el) => el.text.trim().length > 0)
 
-      // Use AI to analyze contrast
-      const aiService = AIServiceFactory.getService("gemini")
-      const analysisResult = await aiService.analyze(
-        JSON.stringify(elementsData),
-        {
-          task: "contrast_analysis"
-        }
-      )
-
-      // For demo purposes, generate a simulated result
-      const simulatedResult: ContrastResult = {
-        score: 0.78,
-        issues: [
+      // Send to background for AI analysis
+      const result = await new Promise<AnalysisResponse | null>((resolve) => {
+        chrome.runtime.sendMessage(
           {
-            element: "p",
-            foreground: "rgb(120, 120, 120)",
-            background: "rgb(245, 245, 245)",
-            ratio: 2.8,
-            recommendation:
-              "Increase contrast to at least 4.5:1 by using #595959 for text"
+            type: "ANALYZE_CONTRAST",
+            payload: {
+              elementData: elementsData,
+              options: { minContrast: 4.5 }
+            }
           },
-          {
-            element: "a",
-            foreground: "rgb(70, 130, 180)",
-            background: "rgb(240, 240, 240)",
-            ratio: 3.2,
-            recommendation: "Darken link color to #0056b3 for better contrast"
-          }
-        ],
-        enhancedCSS: `
-          p { color: #595959 !important; }
-          a { color: #0056b3 !important; }
-        `
+          (response) => resolve(response)
+        )
+      })
+
+      if (!result) {
+        throw new Error("No analysis result received")
       }
 
-      setResult(simulatedResult)
-    } catch (err) {
-      setError(
-        "Failed to analyze contrast: " +
-          (err instanceof Error ? err.message : String(err))
-      )
-    } finally {
+      // Transform the AI response to match our UI format
+      const transformedResult = {
+        score: result.analysis.overall_score,
+        issues: result.analysis.issues.map((issue) => ({
+          element: issue.element,
+          foreground: issue.suggested_colors.foreground,
+          background: issue.suggested_colors.background,
+          ratio: issue.current_contrast,
+          recommendation: issue.recommendation
+        }))
+      }
+
       setIsAnalyzing(false)
+      return transformedResult
+    } catch (error) {
+      console.error("Error analyzing contrast:", error)
+      setError("Failed to analyze contrast")
+      setIsAnalyzing(false)
+      return null
     }
   }
 
-  const applyEnhancedContrast = () => {
-    if (result?.enhancedCSS) {
-      const styleEl = document.createElement("style")
-      styleEl.id = "opti-see-enhanced-contrast"
-      styleEl.textContent = result.enhancedCSS
-      document.head.appendChild(styleEl)
-    }
+  const applyEnhancedContrast = (enhancedCSS: string) => {
+    const styleEl = document.createElement("style")
+    styleEl.id = "opti-see-enhanced-contrast"
+    styleEl.textContent = enhancedCSS
+    document.head.appendChild(styleEl)
   }
 
   const removeEnhancedContrast = () => {
@@ -110,7 +117,6 @@ export const useContrastAnalyzer = () => {
     applyEnhancedContrast,
     removeEnhancedContrast,
     isAnalyzing,
-    result,
     error
   }
 }

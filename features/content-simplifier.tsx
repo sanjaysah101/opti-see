@@ -1,7 +1,7 @@
 import { AIServiceFactory, ClaudeAIService } from "@/services/ai-service"
 import { useState } from "react"
 
-type SimplificationLevel = "mild" | "moderate" | "strong"
+export type SimplificationLevel = "basic" | "moderate" | "advanced"
 
 type SimplificationResult = {
   original: string
@@ -63,7 +63,7 @@ export const useContentSimplifier = () => {
           original: trimmedContent.slice(0, 200) + "...",
           simplified: simplifiedText,
           readingLevel:
-            level === "mild"
+            level === "basic"
               ? "Grade 8-9"
               : level === "moderate"
                 ? "Grade 6-7"
@@ -89,7 +89,7 @@ export const useContentSimplifier = () => {
           simplified:
             "This is a simplified version of the content. It uses shorter sentences and simpler words. It keeps the main ideas but makes them easier to understand.",
           readingLevel:
-            level === "mild"
+            level === "basic"
               ? "Grade 8-9"
               : level === "moderate"
                 ? "Grade 6-7"
