@@ -13,7 +13,7 @@ export const useFocusMode = () => {
     highlightLinks: true,
     dimImages: true
   })
-  
+
   const toggleFocusMode = () => {
     if (isActive) {
       disableFocusMode()
@@ -22,15 +22,15 @@ export const useFocusMode = () => {
     }
     setIsActive(!isActive)
   }
-  
+
   const enableFocusMode = () => {
     // Create and inject the focus mode styles
     const styleEl = document.createElement("style")
     styleEl.id = "opti-see-focus-mode"
-    
+
     // Generate CSS based on intensity
     let css = ""
-    
+
     switch (options.intensity) {
       case "low":
         css = `
@@ -75,7 +75,7 @@ export const useFocusMode = () => {
         `
         break
     }
-    
+
     // Add link highlighting if enabled
     if (options.highlightLinks) {
       css += `
@@ -86,7 +86,7 @@ export const useFocusMode = () => {
         }
       `
     }
-    
+
     // Add image dimming if enabled
     if (options.dimImages) {
       css += `
@@ -95,22 +95,22 @@ export const useFocusMode = () => {
         }
       `
     }
-    
+
     styleEl.textContent = css
     document.head.appendChild(styleEl)
   }
-  
+
   const disableFocusMode = () => {
     const styleEl = document.getElementById("opti-see-focus-mode")
     if (styleEl) {
       styleEl.remove()
     }
   }
-  
+
   const updateOptions = (newOptions: Partial<FocusModeOptions>) => {
     const updatedOptions = { ...options, ...newOptions }
     setOptions(updatedOptions)
-    
+
     // If focus mode is active, update it with new options
     if (isActive) {
       disableFocusMode()
@@ -118,11 +118,11 @@ export const useFocusMode = () => {
       enableFocusMode()
     }
   }
-  
+
   return {
     isActive,
     options,
     toggleFocusMode,
     updateOptions
   }
-} 
+}
